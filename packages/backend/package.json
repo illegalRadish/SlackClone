@@ -8,6 +8,7 @@
 	"author": "",
 	"license": "MIT",
 	"scripts": {
+		"file-test": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --runInBand --colors --ci --verbose --testPathPattern=\"src/libp2p/filetest.test\\.(t|j)s$\" -t \"large file custom setup\"",
 		"build": "tsc -p tsconfig.build.json",
 		"webpack": "webpack --env mode=development && cp ./lib/bundle.cjs ../backend-bundle/bundle.cjs",
 		"webpack:prod": "webpack --env mode=production && cp ./lib/bundle.cjs ../backend-bundle/bundle.cjs",
