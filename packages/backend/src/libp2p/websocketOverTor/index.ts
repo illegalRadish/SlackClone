@@ -16,7 +16,7 @@ import url from 'url'
 
 import type { Server } from 'http'
 import https from 'https'
-
+import http from 'http'
 import { EventEmitter } from 'events'
 
 import { dumpPEM } from '../utils'
@@ -90,7 +90,7 @@ export class WebSockets extends EventEmitter {
       socket = await this._connect(ma, {
         websocket: {
           ...this._websocketOpts,
-          ...this.certData
+          // ...this.certData
         }
       })
     } catch (e) {
@@ -147,6 +147,7 @@ export class WebSockets extends EventEmitter {
     const myUri = `${toUri(ma)}/?remoteAddress=${encodeURIComponent(
       this.localAddress
     )}`
+    log('myUri', myUri)
     const rawSocket = connect(myUri, Object.assign({ binary: true }, options))
 
     if (rawSocket.socket.on) {
@@ -194,7 +195,6 @@ export class WebSockets extends EventEmitter {
    * `upgrader.upgradeInbound`
    */
   prepareListener = ({ handler, upgrader }) => {
-    console.log('preparing listener')
     log('prepareListener')
     const listener: any = new EventEmitter()
 
@@ -202,10 +202,10 @@ export class WebSockets extends EventEmitter {
       server.__connections.push(maConn)
     }
 
-    const serverHttps = https.createServer({
-      ...this.certData,
-      requestCert: true,
-      enableTrace: false
+    const serverHttps = http.createServer({
+      // ...this.certData,
+      // requestCert: false,
+      // enableTrace: false
     })
 
     const optionsServ = {
@@ -223,7 +223,7 @@ export class WebSockets extends EventEmitter {
       let maConn, conn
       // eslint-disable-next-line
       const query = url.parse(request.url, true).query
-      log('server', query.remoteAddress)
+      log('server. query.remoteAddress', query.remoteAddress)
       try {
         maConn = socketToMaConn(stream, multiaddr(query.remoteAddress.toString()))
         const peer = {
@@ -255,6 +255,7 @@ export class WebSockets extends EventEmitter {
 
     listener.close = () => {
       server.__connections.forEach(maConn => maConn.close())
+      log('Closed connections')
       return server.close()
     }
 
@@ -265,8 +266,10 @@ export class WebSockets extends EventEmitter {
 
       const listenOptions = {
         ...ma.toOptions(),
-        port: this.targetPort
+        // port: this.targetPort
       }
+
+      log('listener.listen', listenOptions)
 
       return server.listen(listenOptions)
     }
@@ -284,7 +287,7 @@ export class WebSockets extends EventEmitter {
       // we need to capture from the passed multiaddr
       if (listeningMultiaddr.toString().indexOf('ip4') !== -1) {
         let m = listeningMultiaddr.decapsulate('tcp')
-        m = m.encapsulate('/tcp/443/wss')
+        m = m.encapsulate(`/tcp/${address.port}/ws`)
         if (listeningMultiaddr.getPeerId()) {
           m = m.encapsulate('/p2p/' + ipfsId)
         }
@@ -302,6 +305,7 @@ export class WebSockets extends EventEmitter {
           multiaddrs.push(m)
         }
       }
+      // log('madresses', multiaddrs)
       return multiaddrs
     }
     return listener

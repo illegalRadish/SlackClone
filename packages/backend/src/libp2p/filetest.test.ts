@@ -1,3 +1,4 @@
+//// @ts-nocheck
 import tmp from 'tmp'
 import getPort from 'get-port'
 import fs from 'fs'
@@ -22,6 +23,7 @@ import { test, expect } from '@jest/globals'
 import { createCertificatesTestHelper } from './tests/client-server'
 import waitForExpect from 'wait-for-expect'
 import logger from '../logger'
+import { CertFieldsTypes, getCertFieldValue, parseCertificate } from '@quiet/identity'
 const log = logger('filetest')
 
 const sleep = async (time = 1000) =>
@@ -109,11 +111,26 @@ const downloadFile = async (ipfsInstance, cid, filename) => {
 }
 
 test('large file custom setup', async () => {
+    const proto = 'ws'
     let connected = false
     const tunnelPort1 = await getPort()
     const tunnelPort2 = await getPort()
     const controlPort1 = await getPort()
     const controlPort2 = await getPort()
+
+    const port1 = await getPort()
+    const port2 = await getPort()
+    const port3 = await getPort()
+    const port4 = await getPort()
+    const port5 = await getPort()
+    const port6 = await getPort()
+    const port7 = await getPort()
+    const port8 = await getPort()
+  
+    const port9 = await getPort()
+    const port10 = await getPort()
+
+
     const torDir1 = createTmpDir()
     const torDir2 = createTmpDir()
     let tor1 = new Tor({
@@ -146,7 +163,7 @@ test('large file custom setup', async () => {
         }
       })
     
-  await Promise.all([tor1.init(), tor2.init()])
+  // await Promise.all([tor1.init(), tor2.init()])
   log('SPAWNED TORS')
 
   const agent1 = createHttpsProxyAgent({
@@ -159,29 +176,20 @@ test('large file custom setup', async () => {
   const targetPort1 = await getPort()
   const targetPort2 = await getPort()
 
-  const hService1 = await tor1.createNewHiddenService({ targetPort: targetPort1 })
-  const hService2 = await tor2.createNewHiddenService({ targetPort: targetPort2 })
+  // const hService1 = await tor1.createNewHiddenService({ targetPort: targetPort1 })
+  // const hService2 = await tor2.createNewHiddenService({ targetPort: targetPort2 })
 
-  log('hservices, addresses:', hService1.onionAddress, hService2.onionAddress)
+  // log('hservices, addresses:', hService1.onionAddress, hService2.onionAddress)
 
-  const pems = await createCertificatesTestHelper(`${hService1.onionAddress}`, `${hService2.onionAddress}`)
+  // const pems = await createCertificatesTestHelper(`127.0.0.1:${port9}`, `127.0.0.1:${port10}`)
+  // const parsedCert = parseCertificate(pems.userCert)
+  // log('commonname', getCertFieldValue(parsedCert, CertFieldsTypes.commonName))
 
   const filename = `${(Math.random() + 1).toString(36).substring(7)}_largeFile.txt`
   createFile(filename, 73400320) // 70MB // 73400320
   
   const dir1 = createTmpDir()
   const dir2 = createTmpDir()
-  // const port1 = await getPort()
-  // const port2 = await getPort()
-  // const port3 = await getPort()
-  // const port4 = await getPort()
-  // const port5 = await getPort()
-  // const port6 = await getPort()
-  // const port7 = await getPort()
-  // const port8 = await getPort()
-
-  // const port9 = await getPort()
-  // const port10 = await getPort()
 
   const peerId1 = await createPeerId()
   const peerId2 = await createPeerId()
@@ -196,7 +204,8 @@ test('large file custom setup', async () => {
     },
     peerId: peerId1,
     addresses: {
-      listen: [`/dns4/${hService1.onionAddress}/tcp/443/wss`]
+      listen: [`/ip4/127.0.0.1/tcp/${port9}/${proto}`]
+      // listen: [`/dns4/${hService1.onionAddress}/tcp/443/wss`]
     },
     streamMuxers: [mplex()],
     connectionEncryption: [noise()],
@@ -211,12 +220,13 @@ test('large file custom setup', async () => {
         webSockets({
             filter: filterAll,
             websocket: {
-                agent: agent1,
-                cert: pems.servCert,
-                key: pems.servKey,
-                ca: pems.ca
+                // agent: agent1,
+                // cert: pems.servCert,
+                // key: pems.servKey,
+                // ca: pems.ca
             },
-            localAddress: `/dns4/${hService1.onionAddress}/tcp/443/wss/p2p/${peerId1.toString()}`,
+            localAddress: `/ip4/127.0.0.1/tcp/${port9}/${proto}/p2p/${peerId1.toString()}`,
+            // localAddress: `/dns4/${hService1.onionAddress}/tcp/443/wss/p2p/${peerId1.toString()}`,
             targetPort: targetPort1,
             createServer: createServer
             })],
@@ -244,7 +254,8 @@ test('large file custom setup', async () => {
     },
     peerId: peerId2,
     addresses: {
-      listen: [`/dns4/${hService2.onionAddress}/tcp/443/ws`]
+      listen: [`/ip4/127.0.0.1/tcp/${port10}/${proto}`]
+      // listen: [`/dns4/${hService2.onionAddress}/tcp/443/ws`]
     },
     streamMuxers: [mplex()],
     connectionEncryption: [noise()],
@@ -259,12 +270,13 @@ test('large file custom setup', async () => {
     webSockets({
         filter: filterAll,
         websocket: {
-            agent: agent2,
-            cert: pems.userCert,
-            key: pems.userKey,
-            ca: pems.ca
+            // agent: agent2,
+            // cert: pems.userCert,
+            // key: pems.userKey,
+            // ca: pems.ca
         },
-        localAddress: `/dns4/${hService2.onionAddress}/tcp/443/wss/p2p/${peerId2.toString()}`,
+        localAddress: `/ip4/127.0.0.1/tcp/${port10}/${proto}/p2p/${peerId2.toString()}`,
+        // localAddress: `/dns4/${hService2.onionAddress}/tcp/443/wss/p2p/${peerId2.toString()}`,
         targetPort: targetPort2,
         createServer: createServer
         })],
@@ -296,7 +308,7 @@ test('large file custom setup', async () => {
     repo: dir1.name,
     // config: {
     //   Addresses: {
-    //     Swarm: [`/ip4/0.0.0.0/tcp/${port1}`, `/ip4/127.0.0.1/tcp/${port2}/ws`],
+    //     Swarm: [`/ip4/0.0.0.0/tcp/${port1}`, `/ip4/127.0.0.1/tcp/${port2}/${proto}`],
     //     API: `/ip4/127.0.0.1/tcp/${port3}`,
     //     Gateway: `/ip4/127.0.0.1/tcp/${port4}`
     //   }
@@ -315,7 +327,7 @@ test('large file custom setup', async () => {
     repo: dir2.name,
     // config: {
     //   Addresses: {
-    //     Swarm: [`/ip4/0.0.0.0/tcp/${port5}`, `/ip4/127.0.0.1/tcp/${port6}/ws`],
+    //     Swarm: [`/ip4/0.0.0.0/tcp/${port5}`, `/ip4/127.0.0.1/tcp/${port6}/${proto}`],
     //     API: `/ip4/127.0.0.1/tcp/${port7}`,
     //     Gateway: `/ip4/127.0.0.1/tcp/${port8}`
     //   }
@@ -331,7 +343,7 @@ test('large file custom setup', async () => {
   
   // console.log('Peer1 is dialing peer2 by address')
   try {
-    await p2p1.dial(new Multiaddr(`/dns4/${hService2.onionAddress}/tcp/443/wss/p2p/${peerId2.toString()}`))
+    await p2p1.dial(new Multiaddr(`/ip4/127.0.0.1/tcp/${port10}/${proto}/p2p/${peerId2.toString()}`)) // p2p/${peerId2.toString()}
   } catch (e) {
     log('E DIAL', e.message)
   }
@@ -395,6 +407,6 @@ test('large file custom setup', async () => {
   orbitdb2 = null
   ipfs1 = null
   ipfs2 = null
-  await tor1.kill()
-  await tor2.kill()
+  tor1.process && await tor1.kill()
+  tor2.process && await tor2.kill()
 }, 500_000)
