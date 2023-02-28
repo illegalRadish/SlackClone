@@ -86,11 +86,15 @@ const downloadFile = async (ipfsInstance, cid, filename) => {
   const stat = await ipfsInstance.files.stat(cid)
   console.log('stat', stat)
   const entries = ipfsInstance.cat(cid)
+  console.time('Time between files.cat and first step of iteration')
   const writeStream = fs.createWriteStream(`received${filename}`)
   console.log('before iterating')
   let counter = 1
   for await (const entry of entries) {
     console.log('entry', counter)
+    if (counter === 1) {
+      console.timeEnd('Time between files.cat and first step of iteration')
+    }
     counter++
     await new Promise((resolve, reject) => {
       writeStream.write(entry, err => {
@@ -171,17 +175,6 @@ test('large file custom setup', async () => {
   
   const dir1 = createTmpDir()
   const dir2 = createTmpDir()
-  // const port1 = await getPort()
-  // const port2 = await getPort()
-  // const port3 = await getPort()
-  // const port4 = await getPort()
-  // const port5 = await getPort()
-  // const port6 = await getPort()
-  // const port7 = await getPort()
-  // const port8 = await getPort()
-
-  // const port9 = await getPort()
-  // const port10 = await getPort()
 
   const peerId1 = await createPeerId()
   const peerId2 = await createPeerId()
@@ -293,14 +286,7 @@ test('large file custom setup', async () => {
     init: {
       privateKey: peerId1
     },
-    repo: dir1.name,
-    // config: {
-    //   Addresses: {
-    //     Swarm: [`/ip4/0.0.0.0/tcp/${port1}`, `/ip4/127.0.0.1/tcp/${port2}/ws`],
-    //     API: `/ip4/127.0.0.1/tcp/${port3}`,
-    //     Gateway: `/ip4/127.0.0.1/tcp/${port4}`
-    //   }
-    // }
+    repo: dir1.name
   })
 
   let ipfs2 = await IPFScreate({
@@ -312,14 +298,7 @@ test('large file custom setup', async () => {
     init: {
       privateKey: peerId2
     },
-    repo: dir2.name,
-    // config: {
-    //   Addresses: {
-    //     Swarm: [`/ip4/0.0.0.0/tcp/${port5}`, `/ip4/127.0.0.1/tcp/${port6}/ws`],
-    //     API: `/ip4/127.0.0.1/tcp/${port7}`,
-    //     Gateway: `/ip4/127.0.0.1/tcp/${port8}`
-    //   }
-    // }
+    repo: dir2.name
   })
 
   log('CREATED IPFSSS')
@@ -327,9 +306,7 @@ test('large file custom setup', async () => {
   let orbitdb1 = await OrbitDB.createInstance(ipfs1, { directory: dir1.name })
   let orbitdb2 = await OrbitDB.createInstance(ipfs2, { directory: dir2.name })
   log('created orbitdbs')
-  // const cid = await uploadFile(ipfs1, filename)
-  
-  // console.log('Peer1 is dialing peer2 by address')
+
   try {
     await p2p1.dial(new Multiaddr(`/dns4/${hService2.onionAddress}/tcp/443/wss/p2p/${peerId2.toString()}`))
   } catch (e) {
@@ -380,11 +357,8 @@ test('large file custom setup', async () => {
 
   const cid = await uploadFile(ipfs1, filename)
   const a = await downloadFile(ipfs2, cid, filename)
-  // const b = await downloadFile(ipfs2, cid, filename)
-  // const c = await downloadFile(ipfs2, cid, filename)
   waitForExpect(() => {
     expect(a).toEqual(true)
-    // expect([a, b, c].includes(true))
   }, 400_000)
 
   await orbitdb1.stop()
